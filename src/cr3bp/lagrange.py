@@ -166,6 +166,33 @@ def dSdt_three_bodies_3d (t, S, G, m1, m2, m3):
     return np.concatenate((v1,v2,v3,a1,a2,a3))
 
 
+def dSdt_three_bodies_nondimensional (t, S, m1, m2):
+    r1 = S[0:3]
+    r2 = S[3:6]
+    r3 = S[6:9]
+    
+    v1 = S[9:12]
+    v2 = S[12:15]
+    v3 = S[15:18]
+    
+    r13 = r1-r3
+    r23 = r2-r3
+    r12 = r1-r2
+       
+    a1 = m2*r12/np.power(norm(r12),3)
+    a2 = -m1*r12/np.power(norm(r12),3)
+    a3 = -m1*r13/np.power(norm(r13),3) -m2*r23/np.power(norm(r23),3) 
+        
+    return np.concatenate((v1,v2,v3,a1,a2,a3))
+
+
+
+def un_rotate(xy_rot, ts, w=1):
+    xy = np.zeros(xy_rot.shape)
+    xy[:,0] = np.multiply(xy_rot[:,0],np.cos(ts)) - np.multiply(xy_rot[:,1], np.sin(ts))
+    xy[:,1] = np.multiply(xy_rot[:,0],np.sin(ts)) + np.multiply(xy_rot[:,1], np.cos(ts))
+    return xy
+
 
 
 def propagate_orbit(t0, alpha, initial_states, tspans, diff_eq, t_eval=None, method='LSODA'):
