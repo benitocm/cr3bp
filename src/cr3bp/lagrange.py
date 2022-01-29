@@ -250,7 +250,7 @@ def theoretical_lag_points(alpha, r=1):
             np.array([r*(0.5-alpha),-np.sqrt(3)*r/2,0])]
     
     
-def adjusted_lag_points(func, alpha, r=1):
+def optimized_lag_points(func, alpha, r=1):
     new_lag_points = []
     for idx, lag_point, in enumerate(theoretical_lag_points(alpha, r)):
         X0 = lag_point[0]
@@ -262,7 +262,7 @@ def adjusted_lag_points(func, alpha, r=1):
             delta = 0.00001*r
             root = optimize.brent(f, brack=(X0-delta, X0+delta), tol=1.48e-1)    
         new_lag_points.append(np.array([root,y,0]))
-        print (f'L{idx+1}: th:[{X0},{y}], adj:[{root},{y}] where acc={f(root)}')
+        print (f'L{idx+1}: th:[{X0},{y}], opt:[{root},{y}] where acc={f(root)}')
     return new_lag_points
 
 
