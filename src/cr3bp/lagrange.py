@@ -55,8 +55,8 @@ SUN_SATURN = {
 }
 
 
-# Non-dimesional version of the differential equation
-def dSdt(t, S, alpha):     
+# Dimension-less version of the differential equation for the rotational reference frame
+def dSdt_rot(t, S, alpha):     
     """Differential equation to calculate the movement equation of the m3 body,
     i.e.
     
@@ -91,10 +91,10 @@ def dSdt(t, S, alpha):
 # A partial funtion is defined to look for the zeros of the acceleration function 
 # A one of this has to be defined for any system to study (the alpha parameter)
 # The S and alpha parameters are left free
-partial_acc = partial(dSdt, 0) 
+partial_acc_rot = partial(dSdt_rot, 0) 
 
 
-def dSdt_dimensional(t, S, w, G, alpha, m1, x1, x2):  
+def dSdt_rot_dim(t, S, w, G, alpha, m1, x1, x2):  
     """The dimensional version is put as a function of alpha to facilitate the root finding procedure
 
     Parameters
@@ -143,7 +143,7 @@ t0 = 0
 tf = MOON_ROTATION_PERIOD_IN_SECS*1
 R = EARTH_MOON['l_star']
 
-partial_acc_dimensional = partial(dSdt_dimensional, 0, w=W, G=G, m1=EARTH_MOON['m1'], x1=X1, x2=X2)
+partial_acc_rot_dim = partial(dSdt_rot_dim, 0, w=W, G=G, m1=EARTH_MOON['m1'], x1=X1, x2=X2)
 
 
 def dSdt_three_bodies_3d (t, S, G, m1, m2, m3):
@@ -166,24 +166,24 @@ def dSdt_three_bodies_3d (t, S, G, m1, m2, m3):
     return np.concatenate((v1,v2,v3,a1,a2,a3))
 
 
-def dSdt_three_bodies_nondimensional (t, S, m1, m2):
+def dSdt_inert_3body (t, S, m1, m2):
     r1 = S[0:3]
-    r2 = S[3:6]
-    r3 = S[6:9]
+    v1 = S[3:6]
+    r2 = S[6:9]
     
-    v1 = S[9:12]
-    v2 = S[12:15]
+    v2 = S[9:12]
+    r3 = S[12:15]
     v3 = S[15:18]
     
-    r13 = r1-r3
-    r23 = r2-r3
-    r12 = r1-r2
+    r13 = r3-r1
+    r23 = r3-r2
+    r12 = r2-r1
        
     a1 = m2*r12/np.power(norm(r12),3)
     a2 = -m1*r12/np.power(norm(r12),3)
-    a3 = -m1*r13/np.power(norm(r13),3) -m2*r23/np.power(norm(r23),3) 
+    a3 = -m1*r13/np.power(norm(r13),3) - m2*r23/np.power(norm(r23),3) 
         
-    return np.concatenate((v1,v2,v3,a1,a2,a3))
+    return np.concatenate((v1,a1, v2, a2, v3, a3))
 
 
 
@@ -228,7 +228,7 @@ def propagate_orbit(t0, alpha, initial_states, tspans, diff_eq, t_eval=None, met
 # These are the theoretical Lagrange points. The acceleration as seen from the rotating reference frame should be 0. However,
 # this is not the case. We use the Newton method to find the zeros of the acceleration using as x0 values the theoretical lagrange 
 # points
-def theoretical_lag_points(alpha, r=1):
+def theo_lag_points(alpha, r=1):
     """Computes the theoretical Lagrange points (they are not exact solutions)
     
     Parameters
@@ -250,9 +250,9 @@ def theoretical_lag_points(alpha, r=1):
             np.array([r*(0.5-alpha),-np.sqrt(3)*r/2,0])]
     
     
-def optimized_lag_points(func, alpha, r=1):
+def opt_lag_points(func, alpha, r=1, traces=True):
     new_lag_points = []
-    for idx, lag_point, in enumerate(theoretical_lag_points(alpha, r)):
+    for idx, lag_point, in enumerate(theo_lag_points(alpha, r)):
         X0 = lag_point[0]
         y = lag_point[1]
         f = lambda x: np.linalg.norm(func(S=np.array([x,y,0,0,0,0]),alpha=alpha))
@@ -262,7 +262,8 @@ def optimized_lag_points(func, alpha, r=1):
             delta = 0.00001*r
             root = optimize.brent(f, brack=(X0-delta, X0+delta), tol=1.48e-1)    
         new_lag_points.append(np.array([root,y,0]))
-        print (f'L{idx+1}: th:[{X0},{y}], opt:[{root},{y}] where acc={f(root)}')
+        if traces :
+            print (f'L{idx+1}: th:[{X0},{y}], opt:[{root},{y}] where acc={f(root)}')
     return new_lag_points
 
 
