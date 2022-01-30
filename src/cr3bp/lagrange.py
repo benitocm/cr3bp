@@ -12,6 +12,9 @@ from functools import partial
 from scipy.integrate import solve_ivp   # Differential equation solvers
 from scipy import optimize # Using Newton-Ramson method   
 
+import matplotlib.pyplot as plt
+
+
 
 
 logger = logging.getLogger(__name__)
@@ -166,12 +169,13 @@ def dSdt_three_bodies_3d (t, S, G, m1, m2, m3):
     return np.concatenate((v1,v2,v3,a1,a2,a3))
 
 
-def dSdt_inert_3body (t, S, m1, m2):
+def dSdt_inert_3body (t, S, m1, m2, G = 1):
     r1 = S[0:3]
     v1 = S[3:6]
-    r2 = S[6:9]
     
+    r2 = S[6:9]
     v2 = S[9:12]
+    
     r3 = S[12:15]
     v3 = S[15:18]
     
@@ -179,9 +183,9 @@ def dSdt_inert_3body (t, S, m1, m2):
     r23 = r3-r2
     r12 = r2-r1
        
-    a1 = m2*r12/np.power(norm(r12),3)
-    a2 = -m1*r12/np.power(norm(r12),3)
-    a3 = -m1*r13/np.power(norm(r13),3) - m2*r23/np.power(norm(r23),3) 
+    a1 = G*(m2*r12/np.power(norm(r12),3))
+    a2 = G*(-m1*r12/np.power(norm(r12),3))
+    a3 = G*(-m1*r13/np.power(norm(r13),3) - m2*r23/np.power(norm(r23),3))
         
     return np.concatenate((v1,a1, v2, a2, v3, a3))
 
@@ -192,6 +196,24 @@ def un_rotate(xy_rot, ts, w=1):
     xy[:,0] = np.multiply(xy_rot[:,0],np.cos(ts)) - np.multiply(xy_rot[:,1], np.sin(ts))
     xy[:,1] = np.multiply(xy_rot[:,0],np.sin(ts)) + np.multiply(xy_rot[:,1], np.cos(ts))
     return xy
+
+
+def plot_orbits(sols_st, limit, plt_style='seaborn-whitegrid'):
+    plt.style.use(plt_style)
+    fig, ax = plt.subplots(nrows=len(sols_st),figsize=(9,5*5))
+    fig.subplots_adjust(hspace=0.2,top=0.99)
+    colors= ['bo','co','ro']
+    for idx, sol in enumerate(sols_st) :
+        ax[idx].set_xlabel('x')
+        ax[idx].set_ylabel('y')
+        x_limits = (-limit,limit)
+        y_limits = (-limit,limit)
+        ax[idx].set_xlim(x_limits)
+        ax[idx].set_ylim(y_limits)
+        for color_idx, (body_name, st) in enumerate(sol.items()):
+            ax[idx].plot(st[:,0:1], st[:,1:2] , colors[color_idx], ms = 1, label=body_name )
+        ax[idx].set_title("L"+str(idx+1))
+    ax[0].legend()    
 
 
 
